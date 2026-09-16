@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flashing Car</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Flash Portal Shell -->
+  <div class="flash-portal">
+    
+    <!-- Retro Flash Portal Topbar -->
+    <header class="portal-header">
+      <div class="portal-title">
+        <span class="logo-badge">FLASH ARCADE</span>
+        <span>FLASHING CAR</span>
+      </div>
+      <div class="portal-controls">
+        <button id="btn-toggle-sound" class="portal-btn" title="Toggle Sound Effects">🔊 SFX ON</button>
+        <button id="btn-toggle-music" class="portal-btn" title="Toggle Music">🎵 MUSIC ON</button>
+        <button id="btn-toggle-crt" class="portal-btn" title="Toggle CRT Scanlines">📺 CRT ON</button>
+        <button id="btn-fullscreen" class="portal-btn" title="Fullscreen">⛶ FULLSCREEN</button>
+      </div>
+    </header>
+
+    <!-- Game Viewport -->
+    <div class="viewport-container" id="game-container">
+      
+      <!-- Canvas 2D -->
+      <canvas id="gameCanvas" width="1024" height="640"></canvas>
+
+      <!-- Retro CRT Scanline Shader Overlay -->
+      <div id="crt-overlay" class="crt-overlay"></div>
+
+      <!-- Live In-game HUD -->
+      <div id="hud" class="hud-layer hidden">
+        <div class="hud-top">
+          <div class="hud-badges">
+            <div class="hud-pill hud-rank" id="hud-pos">1ST</div>
+            <div class="hud-pill hud-lap" id="hud-lap">LAP 1/3</div>
+            <div class="hud-pill hud-time" id="hud-time">0.0s</div>
+          </div>
+          <!-- Mini-map radar -->
+          <div class="minimap-wrapper">
+            <canvas id="minimap" width="130" height="100"></canvas>
+          </div>
+        </div>
+
+        <div class="hud-bottom">
+          <!-- Digital Speedometer -->
+          <div class="speedometer-gauge">
+            <div class="speed-number" id="hud-speed-val">0</div>
+            <div class="speed-unit">KM/H</div>
+          </div>
+
+          <!-- Nitro Rocket Bar -->
+          <div class="nitro-gauge">
+            <div class="nitro-label">
+              <span>NITRO BOOST (N2O)</span>
+              <span>[SHIFT]</span>
+            </div>
+            <div class="nitro-bar-bg">
+              <div class="nitro-bar-fill" id="hud-nitro-fill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Touch Controls for Mobile/Tablets -->
+      <div class="touch-controls" id="touch-controls">
+        <div style="display: flex; gap: 10px;">
+          <button class="touch-btn" id="btn-left">◀</button>
+          <button class="touch-btn" id="btn-right">▶</button>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="touch-btn" id="btn-drift" style="background:#8e44ad;">⚡</button>
+          <button class="touch-btn" id="btn-brake" style="background:#c0392b;">▼</button>
+          <button class="touch-btn" id="btn-gas" style="background:#27ae60;">▲</button>
+          <button class="touch-btn" id="btn-nitro" style="background:#2980b9;">🚀</button>
+        </div>
+      </div>
+
+      <!-- 1. MAIN MENU SCREEN -->
+      <div id="main-menu" class="overlay-screen">
+        <div class="title-header">
+          <h1 class="game-title">FLASHING CAR</h1>
+          <p class="game-subtitle">EASY ARCADE RACER &bull; NEON PULSE EDITION</p>
+        </div>
+
+        <!-- Vehicle Selection -->
+        <div class="selection-section">
+          <div class="section-label">🏎️ 1. SELECT YOUR MACHINE</div>
+          <div class="cars-grid" id="cars-selector">
+            <!-- Populated via script -->
+          </div>
+        </div>
+
+        <!-- Track Selection -->
+        <div class="selection-section">
+          <div class="section-label">🏁 2. SELECT GRAND PRIX CIRCUIT</div>
+          <div class="tracks-grid" id="tracks-selector">
+            <!-- Populated via script -->
+          </div>
+        </div>
+
+        <button id="btn-start-race" class="btn-launch">START RACE</button>
+
+        <!-- Controls Cheat Sheet -->
+        <div class="controls-bar">
+          <div><span class="key-badge">W</span> <span class="key-badge">A</span> <span class="key-badge">S</span> <span class="key-badge">D</span> or <span class="key-badge">ARROWS</span> Drive</div>
+          <div><span class="key-badge">SPACE</span> Handbrake Drift</div>
+          <div><span class="key-badge">SHIFT</span> or <span class="key-badge">N</span> Nitro Boost</div>
+          <div><span class="key-badge">R</span> Reset Car</div>
+          <div><span class="key-badge">P</span> Pause</div>
+        </div>
+      </div>
+
+      <!-- 2. PAUSE OVERLAY -->
+      <div id="pause-screen" class="overlay-screen hidden">
+        <div class="podium-box">
+          <h2 style="color: var(--cyber-blue);">RACE PAUSED</h2>
+          <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 20px;">
+            <button id="btn-resume" class="btn-launch" style="padding: 10px 40px; font-size: 1.2rem;">RESUME</button>
+            <button id="btn-restart" class="portal-btn" style="justify-content: center; padding: 10px;">RESTART RACE</button>
+            <button id="btn-menu-from-pause" class="portal-btn" style="justify-content: center; padding: 10px;">MAIN MENU</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. FINISH SCREEN -->
+      <div id="finish-screen" class="overlay-screen hidden">
+        <div class="podium-box">
+          <h2 id="finish-rank" class="gold">1ST PLACE!</h2>
+          <div class="results-stats">
+            <div id="finish-time">Total Time: 00:00</div>
+            <div id="finish-best-lap">Best Lap: 00:00</div>
+            <div id="finish-drift">Drift Points: 0</div>
+          </div>
+          <div style="display: flex; gap: 16px; justify-content: center;">
+            <button id="btn-race-again" class="btn-launch" style="padding: 10px 36px; font-size: 1.2rem;">RACE AGAIN</button>
+            <button id="btn-menu-from-finish" class="portal-btn" style="padding: 10px 24px; font-size: 1rem;">CHANGE CAR / TRACK</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Portal Footer Info -->
+    <footer class="portal-footer">
+      <div>Pure HTML5 Canvas + Procedural Web Audio Engine &bull; Zero External Dependencies</div>
+      <div>Controls: <strong>[↑] Gas &bull; [↓] Brake &bull; [←/→] Steer &bull; [SPACE] Drift &bull; [SHIFT] Nitro</strong></div>
+    </footer>
+  </div>
+
+  <!-- Game Scripts -->
+  <script src="audio.js"></script>
+  <script src="tracks.js"></script>
+  <script src="cars.js"></script>
+  <script src="game.js"></script>
+
+  <!-- UI Wiring Script -->
+  <script>
+    let selectedCar = 0;
+    let selectedTrack = 0;
+
+    // Render Car Cards
+    function initMenu() {
+      const carContainer = document.getElementById("cars-selector");
+      carContainer.innerHTML = "";
+      CAR_TYPES.forEach((c, idx) => {
+        const card = document.createElement("div");
+        card.className = "card-item" + (idx === 0 ? " selected" : "");
+        card.innerHTML = `
+          <div class="card-title" style="color:${c.color}">${c.name}</div>
+          <div class="card-type">${c.type}</div>
+          <div class="stat-row">
+            <span>Speed</span>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${(c.topSpeed / 14) * 100}%;"></div></div>
+          </div>
+          <div class="stat-row">
+            <span>Accel</span>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${(c.accel / 0.26) * 100}%;"></div></div>
+          </div>
+          <div class="stat-row">
+            <span>Handling</span>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${(c.handling / 0.07) * 100}%;"></div></div>
+          </div>
+        `;
+        card.onclick = () => {
+          document.querySelectorAll("#cars-selector .card-item").forEach(el => el.classList.remove("selected"));
+          card.classList.add("selected");
+          selectedCar = idx;
+        };
+        carContainer.appendChild(card);
+      });
+
+      // Render Track Cards
+      const trackContainer = document.getElementById("tracks-selector");
+      trackContainer.innerHTML = "";
+      TRACKS.forEach((t, idx) => {
+        const card = document.createElement("div");
+        card.className = "card-item" + (idx === 0 ? " selected" : "");
+        card.innerHTML = `
+          <div class="card-title">${t.name}</div>
+          <div class="card-type" style="color:var(--cyber-blue);">${t.difficulty} &bull; ${t.laps} Laps</div>
+          <p style="font-size:0.75rem; color:#94a3b8; line-height:1.2;">${t.description}</p>
+        `;
+        card.onclick = () => {
+          document.querySelectorAll("#tracks-selector .card-item").forEach(el => el.classList.remove("selected"));
+          card.classList.add("selected");
+          selectedTrack = idx;
+        };
+        trackContainer.appendChild(card);
+      });
+    }
+
+    // Portal Controls
+    document.getElementById("btn-toggle-sound").onclick = function() {
+      if (window.audio) {
+        const isMuted = window.audio.toggleMute();
+        this.textContent = isMuted ? "🔇 SFX OFF" : "🔊 SFX ON";
+      }
+    };
+
+    document.getElementById("btn-toggle-music").onclick = function() {
+      if (window.audio) {
+        const enabled = window.audio.toggleMusic();
+        this.textContent = enabled ? "🎵 MUSIC ON" : "🎵 MUSIC OFF";
+      }
+    };
+
+    document.getElementById("btn-toggle-crt").onclick = function() {
+      const crt = document.getElementById("crt-overlay");
+      crt.classList.toggle("disabled");
+      this.textContent = crt.classList.contains("disabled") ? "📺 CRT OFF" : "📺 CRT ON";
+    };
+
+    document.getElementById("btn-fullscreen").onclick = function() {
+      const el = document.getElementById("game-container");
+      if (!document.fullscreenElement) {
+        el.requestFullscreen().catch(err => alert("Fullscreen error: " + err.message));
+      } else {
+        document.exitFullscreen();
+      }
+    };
+
+    // Race Start
+    document.getElementById("btn-start-race").onclick = function() {
+      if (window.game) {
+        window.game.startRace(selectedCar, selectedTrack);
+      }
+    };
+
+    document.getElementById("btn-race-again").onclick = function() {
+      if (window.game) {
+        window.game.startRace(selectedCar, selectedTrack);
+      }
+    };
+
+    document.getElementById("btn-menu-from-finish").onclick = function() {
+      document.getElementById("finish-screen").classList.add("hidden");
+      document.getElementById("hud").classList.add("hidden");
+      document.getElementById("main-menu").classList.remove("hidden");
+      if (window.game) window.game.state = "MENU";
+    };
+
+    document.getElementById("btn-resume").onclick = function() {
+      if (window.game) window.game.togglePause();
+    };
+
+    document.getElementById("btn-restart").onclick = function() {
+      if (window.game) window.game.startRace(selectedCar, selectedTrack);
+    };
+
+    document.getElementById("btn-menu-from-pause").onclick = function() {
+      document.getElementById("pause-screen").classList.add("hidden");
+      document.getElementById("hud").classList.add("hidden");
+      document.getElementById("main-menu").classList.remove("hidden");
+      if (window.game) window.game.state = "MENU";
+    };
+
+    // Touch device detection
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+      document.getElementById("touch-controls").style.display = "flex";
+    }
+
+    initMenu();
+  </script>
+</body>
+</html>
