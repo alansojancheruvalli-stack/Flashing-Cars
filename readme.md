@@ -13,7 +13,7 @@
 
 Built using pure **HTML5 Canvas** and **vanilla JavaScript**, it features responsive arcade driving physics, procedural Web Audio sound synthesis, smart AI competitors, and signature flashing neon aesthetics—**with 100% zero external dependencies or build tools required**.
 
-[Play Demo](#quick-start) • [Features](#features) • [Controls](#controls) • [Architecture](#project-structure)
+[Play Demo]([#quick-star](https://flashing-cars.vercel.app) • [Features](#features) • [Controls](#controls) • [Architecture](#project-structure)
 
 </div>
 
